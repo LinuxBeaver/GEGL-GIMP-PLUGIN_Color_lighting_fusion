@@ -1,6 +1,6 @@
 
 
-
+![image preview](glowzebra.png )
 
 ## Compiling and Installing
 
