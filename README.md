@@ -1,6 +1,6 @@
 
 
-![image preview](glowzebra.png )
+![image preview](color-light-fusion-preview.png )
 
 ## Compiling and Installing
 
