@@ -49,9 +49,11 @@ enum_start (gegl_blend_mode_type4)
               N_("Screen"))
  enum_value (GEGL_BLEND_MODE_TYPE_HSVHUE,      "hsvhue",
               N_("HSV Hue"))
+ enum_value (GEGL_BLEND_MODE_TYPE_ANTIERASE,      "antierase",
+              N_("No Color or Blend Mode"))
 property_enum (blendmode, _("Color Blend Mode"),
     GeglBlendModeType4, gegl_blend_mode_type4,
-    GEGL_BLEND_MODE_TYPE_SOFTLIGHT)
+    GEGL_BLEND_MODE_TYPE_ANTIERASE)
 enum_end (GeglBlendModeType4)
 
 
@@ -71,8 +73,8 @@ property_double (scale, _("Sharpen"), 0.0)
 
 property_double (sat, _("Saturation"), 0)
     description(_("Scale, strength of effect"))
-    value_range (-30, 30.0)
-    ui_range (-30, 30.0)
+    value_range (-65, 30.0)
+    ui_range (-65, 30.0)
 
 property_double (lightness, _("Brightness"), 0.0)
    description  (_("Lightness adjustment"))
@@ -124,6 +126,7 @@ property_double (highlights_ccorrect, _("Highlights color adjustment"), 50.0)
 typedef struct
 {
   GeglNode *input;
+  GeglNode *sa; 
   GeglNode *nop; 
   GeglNode *bloom; 
   GeglNode *unsharpmask; 
@@ -133,6 +136,7 @@ typedef struct
   GeglNode *hardlight; 
   GeglNode *hslcolor; 
   GeglNode *hsvhue; 
+  GeglNode *antierase; 
   GeglNode *addition; 
   GeglNode *crop; 
   GeglNode *shadowhighlights; 
@@ -156,7 +160,7 @@ update_graph (GeglOperation *operation)
   State *state = o->user_data;
   if (!state) return;
 
-  GeglNode *usethis = state->softlight; /* the default */
+  GeglNode *usethis = state->antierase; /* the default */
   switch (o->blendmode) {
     case GEGL_BLEND_MODE_TYPE_GRAINMERGE: usethis = state->grainmerge; break;
     case GEGL_BLEND_MODE_TYPE_HSLCOLOR: usethis = state->hslcolor; break;
@@ -170,9 +174,12 @@ update_graph (GeglOperation *operation)
     case GEGL_BLEND_MODE_TYPE_ADDITION: usethis = state->addition; break;
     case GEGL_BLEND_MODE_TYPE_SCREEN: usethis = state->screen; break;
     case GEGL_BLEND_MODE_TYPE_HSVHUE: usethis = state->hsvhue; break;
+    case GEGL_BLEND_MODE_TYPE_ANTIERASE: usethis = state->antierase; break;
   }
-  gegl_node_link_many (state->input, state->unsharpmask, state->nop, usethis, state->crop, state->lightchroma, state->shadowhighlights, state->output,  NULL);
+  gegl_node_link_many (state->input, state->sa, state->output, NULL);
+  gegl_node_link_many (state->input, state->nop, state->unsharpmask, state->lightchroma, state->shadowhighlights,  usethis,   NULL);
   gegl_node_connect_from (usethis, "aux", state->color, "output");
+  gegl_node_connect_from (state->sa, "aux", usethis, "output");
 
 }
 
@@ -180,7 +187,7 @@ static void attach (GeglOperation *operation)
 {
   GeglNode *gegl = operation->node;
 GeglProperties *o = GEGL_PROPERTIES (operation);
-  GeglNode *input, *output, *nop, *color, *unsharpmask, *screen, *bloom, *addition, *shadowhighlights, *linearlight, *hardlight, *hsvhue, *crop, *lightchroma, *burn, *multiply, *softglow, *hslcolor, *lchcolor, *overlay, *softlight, *grainmerge;
+  GeglNode *input, *sa, *output, *nop, *color, *unsharpmask, *screen, *antierase, *bloom, *addition, *shadowhighlights, *linearlight, *hardlight, *hsvhue, *crop, *lightchroma, *burn, *multiply, *softglow, *hslcolor, *lchcolor, *overlay, *softlight, *grainmerge;
 
   input    = gegl_node_get_input_proxy (gegl, "input");
   output   = gegl_node_get_output_proxy (gegl, "output");
@@ -189,6 +196,11 @@ GeglProperties *o = GEGL_PROPERTIES (operation);
   color    = gegl_node_new_child (gegl,
                                   "operation", "gegl:color",
                                   NULL);
+
+  sa    = gegl_node_new_child (gegl,
+                                  "operation", "gegl:src-atop",
+                                  NULL);
+
 
   crop    = gegl_node_new_child (gegl,
                                   "operation", "gegl:crop",
@@ -224,7 +236,7 @@ overlay = gegl_node_new_child (gegl,
                                   "operation", "gimp:layer-mode", "layer-mode", 23, NULL);
 
 burn = gegl_node_new_child (gegl,
-                                  "operation", "gimp:layer-mode", "layer-mode", 43,  "blend-space", 2, NULL);
+                                  "operation", "gimp:layer-mode", "layer-mode", 43,  "blend-space", 1, NULL);
 
 lchcolor = gegl_node_new_child (gegl,
                                     "operation", "gimp:layer-mode", "layer-mode", 26,  "blend-space", 3, NULL);
@@ -237,6 +249,10 @@ linearlight = gegl_node_new_child (gegl,
 
 screen = gegl_node_new_child (gegl,
                                     "operation", "gimp:layer-mode", "layer-mode", 31,  "blend-space", 2, NULL);
+
+antierase = gegl_node_new_child (gegl,
+                                    "operation", "gimp:layer-mode", "layer-mode", 63,  "blend-space", 2, NULL);
+
 
 
   lightchroma    = gegl_node_new_child (gegl,
@@ -275,10 +291,6 @@ screen = gegl_node_new_child (gegl,
 
 
 
-  gegl_node_link_many (input, nop, softlight, crop, lightchroma, shadowhighlights, output, NULL);
-  gegl_node_connect_from (softlight, "aux", color, "output");
-
-
 
 
 
@@ -287,9 +299,11 @@ screen = gegl_node_new_child (gegl,
    */
   State *state = g_malloc0 (sizeof (State));
   state->input = input;
+  state->sa = sa;
   state->unsharpmask = unsharpmask;
   state->nop = nop;
   state->softlight = softlight;
+  state->antierase = antierase;
   state->burn = burn;
   state->lchcolor = lchcolor;
   state->addition = addition;
@@ -321,11 +335,11 @@ GeglOperationMetaClass *operation_meta_class = GEGL_OPERATION_META_CLASS (klass)
   operation_meta_class->update = update_graph;
 
   gegl_operation_class_set_keys (operation_class,
-    "name",        "gegl:colorlightfusion",
+    "name",        "gegl:colorlightingfusion",
     "title",       _("Color Lighting Fusion"),
     "categories",  "Artistic",
     "reference-hash", "ha3fs1fv0nyagsyefsfsgac",
-    "description", _("GEGL does color and lighting adjustments from existing GEGL filters and Gimp Operations. Setting the blend color's opacity below 100%  or to 0% can be done with the A slider.'"
+    "description", _("GEGL does color and lighting adjustments from parts of existing GEGL operations. You can set the blend opacities slider to 99 to 0% by clicking on the colorbox and sliding the A slider to 0.0. This is mandatory for getting the most out of the filter."
                      ""),
     NULL);
 }
