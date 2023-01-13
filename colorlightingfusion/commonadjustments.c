@@ -68,13 +68,10 @@ property_double (scale, _("Sharpen"), 0.0)
     ui_gamma    (3.0)
 
 
-
-
-
-property_double (sat, _("Saturation"), 0)
+property_double (sat, _("Saturation"), 1.0)
     description(_("Scale, strength of effect"))
-    value_range (-65, 30.0)
-    ui_range (-65, 30.0)
+    value_range (0.0, 10.0)
+    ui_range (0.0, 2.0)
 
 property_double (lightness, _("Brightness"), 0.0)
    description  (_("Lightness adjustment"))
@@ -149,6 +146,7 @@ typedef struct
   GeglNode *gegl1;
   GeglNode *color;
   GeglNode *lightchroma;
+  GeglNode *saturation; 
   GeglNode *noisereduction;  
   GeglNode *output;
 }State;
@@ -176,8 +174,9 @@ update_graph (GeglOperation *operation)
     case GEGL_BLEND_MODE_TYPE_HSVHUE: usethis = state->hsvhue; break;
     case GEGL_BLEND_MODE_TYPE_ANTIERASE: usethis = state->antierase; break;
   }
+
   gegl_node_link_many (state->input, state->sa, state->output, NULL);
-  gegl_node_link_many (state->input, state->nop, state->unsharpmask, state->lightchroma, state->shadowhighlights,  usethis,   NULL);
+  gegl_node_link_many (state->input, state->nop, state->unsharpmask, state->lightchroma, state->saturation, state->shadowhighlights,  usethis,   NULL);
   gegl_node_connect_from (usethis, "aux", state->color, "output");
   gegl_node_connect_from (state->sa, "aux", usethis, "output");
 
@@ -187,7 +186,7 @@ static void attach (GeglOperation *operation)
 {
   GeglNode *gegl = operation->node;
 GeglProperties *o = GEGL_PROPERTIES (operation);
-  GeglNode *input, *sa, *output, *nop, *color, *unsharpmask, *screen, *antierase, *bloom, *addition, *shadowhighlights, *linearlight, *hardlight, *hsvhue, *crop, *lightchroma, *burn, *multiply, *softglow, *hslcolor, *lchcolor, *overlay, *softlight, *grainmerge;
+  GeglNode *input, *sa, *output, *nop, *color, *unsharpmask, *screen, *antierase, *saturation, *bloom, *addition, *shadowhighlights, *linearlight, *hardlight, *hsvhue, *crop, *lightchroma, *burn, *multiply, *softglow, *hslcolor, *lchcolor, *overlay, *softlight, *grainmerge;
 
   input    = gegl_node_get_input_proxy (gegl, "input");
   output   = gegl_node_get_output_proxy (gegl, "output");
@@ -259,6 +258,11 @@ antierase = gegl_node_new_child (gegl,
                                   "operation", "gegl:hue-chroma",
                                   NULL);
 
+  saturation    = gegl_node_new_child (gegl,
+                                  "operation", "gegl:saturation",
+                                  NULL);
+
+
 
   unsharpmask    = gegl_node_new_child (gegl,
                                   "operation", "gegl:unsharp-mask",
@@ -272,9 +276,8 @@ antierase = gegl_node_new_child (gegl,
 
 
 
-  gegl_operation_meta_redirect (operation, "sat", lightchroma, "chroma");
+  gegl_operation_meta_redirect (operation, "sat", saturation, "scale");
   gegl_operation_meta_redirect (operation, "lightness", lightchroma, "lightness");
-  gegl_operation_meta_redirect (operation, "hue", lightchroma, "hue");
   gegl_operation_meta_redirect (operation, "color", color, "value");
   gegl_operation_meta_redirect (operation, "scale", unsharpmask, "scale");
      gegl_operation_meta_redirect (operation, "radius", shadowhighlights, "radius");
@@ -315,6 +318,7 @@ antierase = gegl_node_new_child (gegl,
   state->overlay = overlay;
   state->shadowhighlights = shadowhighlights;
   state->hslcolor = hslcolor;
+  state->saturation = saturation;
   state->hsvhue = hsvhue;
   state->crop = crop;
   state->color = color;
