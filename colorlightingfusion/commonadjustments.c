@@ -68,14 +68,24 @@ property_double (scale, _("Sharpen"), 0.0)
     ui_gamma    (3.0)
 
 
-property_double (sat, _("Saturation"), 1.0)
+property_double (sat, _("Saturation (RESETS at 1)"), 1.0)
     description(_("Scale, strength of effect"))
     value_range (0.0, 10.0)
     ui_range (0.0, 2.0)
 
-property_double (lightness, _("Brightness"), 0.0)
+property_double (contrast, _("Contrast (RESETS AT 1)"),  1.0)
+   description  (_("Magnitude of contrast scaling >1.0 brighten < 1.0 darken"))
+   value_range  (-5.0, 5.0)
+   ui_range     (0.0, 2.0)
+
+property_double (brightness, _("Brightness"), 0.0)
+   description  (_("Amount to increase brightness"))
+   value_range  (-3.0, 3.0)
+   ui_range     (-1.0, 1.0)
+
+property_double (lightness, _("Lightness"), 0.0)
    description  (_("Lightness adjustment"))
-   value_range  (-30, 30.0)
+   value_range  (-70, 70.0)
 
 property_double (shadows, _("Shadows"), 0.0)
     description (_("Adjust exposure of shadows"))
@@ -89,20 +99,20 @@ property_double (whitepoint, _("Shadow Highlight White point adjustment"), 0.0)
     description (_("Shift white point"))
     value_range (-10.0, 10.0)
 
-property_double (radius, _("Shadow Highlight Radius"), 100.0)
+property_double (radius, _("Shadow Highlight Radius (RESETS AT 100)"), 100.0)
     description (_("Spatial extent"))
     value_range (0.1, 1500.0)
     ui_range    (0.1, 200.0)
 
-property_double (compress, _("Shadow Hightlight Compress"), 50.0)
+property_double (compress, _("Shadow Hightlight Compress (RESETS AT 50)"), 50.0)
     description (_("Compress the effect on shadows/highlights and preserve midtones"))
     value_range (0.0, 100.0)
 
-property_double (shadows_ccorrect, _("Shadows color adjustment"), 100.0)
+property_double (shadows_ccorrect, _("Shadows color adjustment (RESETS AT 100)"), 100.0)
     description (_("Adjust saturation of shadows"))
     value_range (0.0, 100.0)
 
-property_double (highlights_ccorrect, _("Highlights color adjustment"), 50.0)
+property_double (highlights_ccorrect, _("Highlights color adjustment (RESETS AT 50)"), 50.0)
     description (_("Adjust saturation of highlights"))
     value_range (0.0, 100.0)
 
@@ -148,6 +158,7 @@ typedef struct
   GeglNode *lightchroma;
   GeglNode *saturation; 
   GeglNode *noisereduction;  
+  GeglNode *bc;  
   GeglNode *output;
 }State;
 
@@ -176,7 +187,7 @@ update_graph (GeglOperation *operation)
   }
 
   gegl_node_link_many (state->input, state->sa, state->output, NULL);
-  gegl_node_link_many (state->input, state->nop, state->unsharpmask, state->lightchroma, state->saturation, state->shadowhighlights,  usethis,   NULL);
+  gegl_node_link_many (state->input, state->nop, state->unsharpmask, state->bc, state->lightchroma, state->saturation, state->shadowhighlights,  usethis,   NULL);
   gegl_node_connect_from (usethis, "aux", state->color, "output");
   gegl_node_connect_from (state->sa, "aux", usethis, "output");
 
@@ -186,7 +197,7 @@ static void attach (GeglOperation *operation)
 {
   GeglNode *gegl = operation->node;
 GeglProperties *o = GEGL_PROPERTIES (operation);
-  GeglNode *input, *sa, *output, *nop, *color, *unsharpmask, *screen, *antierase, *saturation, *bloom, *addition, *shadowhighlights, *linearlight, *hardlight, *hsvhue, *crop, *lightchroma, *burn, *multiply, *softglow, *hslcolor, *lchcolor, *overlay, *softlight, *grainmerge;
+  GeglNode *input, *sa, *output, *nop, *color, *unsharpmask, *bc, *screen, *antierase, *saturation, *bloom, *addition, *shadowhighlights, *linearlight, *hardlight, *hsvhue, *crop, *lightchroma, *burn, *multiply, *softglow, *hslcolor, *lchcolor, *overlay, *softlight, *grainmerge;
 
   input    = gegl_node_get_input_proxy (gegl, "input");
   output   = gegl_node_get_output_proxy (gegl, "output");
@@ -194,6 +205,10 @@ GeglProperties *o = GEGL_PROPERTIES (operation);
 
   color    = gegl_node_new_child (gegl,
                                   "operation", "gegl:color",
+                                  NULL);
+
+  bc    = gegl_node_new_child (gegl,
+                                  "operation", "gegl:brightness-contrast",
                                   NULL);
 
   sa    = gegl_node_new_child (gegl,
@@ -276,6 +291,8 @@ antierase = gegl_node_new_child (gegl,
 
 
 
+
+
   gegl_operation_meta_redirect (operation, "sat", saturation, "scale");
   gegl_operation_meta_redirect (operation, "lightness", lightchroma, "lightness");
   gegl_operation_meta_redirect (operation, "color", color, "value");
@@ -287,6 +304,9 @@ antierase = gegl_node_new_child (gegl,
       gegl_operation_meta_redirect (operation, "compress", shadowhighlights, "compress");
       gegl_operation_meta_redirect (operation, "shadows-ccorrect", shadowhighlights, "shadows-ccorrect");
       gegl_operation_meta_redirect (operation, "highlights-ccorrect", shadowhighlights, "highlights-ccorrect");
+      gegl_operation_meta_redirect (operation, "brightness", bc, "brightness");
+      gegl_operation_meta_redirect (operation, "contrast", bc, "contrast");
+
 
 
 
@@ -322,6 +342,7 @@ antierase = gegl_node_new_child (gegl,
   state->hsvhue = hsvhue;
   state->crop = crop;
   state->color = color;
+  state->bc = bc;
   state->lightchroma = lightchroma;
   state->output = output;
 
@@ -343,7 +364,7 @@ GeglOperationMetaClass *operation_meta_class = GEGL_OPERATION_META_CLASS (klass)
     "title",       _("Color Lighting Fusion"),
     "categories",  "Artistic",
     "reference-hash", "ha3fs1fv0nyagsyefsfsgac",
-    "description", _("GEGL does color and lighting adjustments from parts of existing GEGL operations. You can set the blend opacities slider to 99 to 0% by clicking on the colorbox and sliding the A slider to 0.0. This is mandatory for getting the most out of the filter."
+    "description", _("GEGL does all common color and lighting adjustments in on place. Non specified resets are at 0. You can set the blend mode opacity slider from 99% to 0% by clicking on the colorbox and sliding the A slider to 0.0. This is mandatory for getting the most out of the filter."
                      ""),
     NULL);
 }
