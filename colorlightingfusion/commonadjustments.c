@@ -117,6 +117,20 @@ property_double (highlights_ccorrect, _("Highlights color adjustment (RESETS AT 
     value_range (0.0, 100.0)
 
 
+property_double (red, _("Red Channel (Resets at 1)"), 1.0)
+  description(_("Set the red amount for the red channel"))
+  value_range (-2.0, 2.0)
+
+
+property_double (green, _("Green Channel (Resets at 1)"), 1.0)
+  description(_("Set the green amount for the green channel"))
+  value_range (-2.0, 2.0)
+
+property_double (blue, _("Blue channel (Resets at 1)"), 1.0)
+  description(_("Set the blue amount for the blue channel"))
+  value_range (-2.0, 2.0)
+
+
 
 
 #else
@@ -159,6 +173,7 @@ typedef struct
   GeglNode *saturation; 
   GeglNode *noisereduction;  
   GeglNode *bc;  
+  GeglNode *channelmixer;  
   GeglNode *output;
 }State;
 
@@ -187,9 +202,9 @@ update_graph (GeglOperation *operation)
   }
 
   gegl_node_link_many (state->input, state->sa, state->output, NULL);
-  gegl_node_link_many (state->input, state->nop, state->unsharpmask, state->bc, state->lightchroma, state->saturation, state->shadowhighlights,  usethis,   NULL);
+  gegl_node_link_many (state->input, state->nop, state->unsharpmask, state->bc, state->lightchroma, state->saturation, state->shadowhighlights,  usethis, state->channelmixer,   NULL);
   gegl_node_connect_from (usethis, "aux", state->color, "output");
-  gegl_node_connect_from (state->sa, "aux", usethis, "output");
+  gegl_node_connect_from (state->sa, "aux", state->channelmixer, "output");
 
 }
 
@@ -197,7 +212,7 @@ static void attach (GeglOperation *operation)
 {
   GeglNode *gegl = operation->node;
 GeglProperties *o = GEGL_PROPERTIES (operation);
-  GeglNode *input, *sa, *output, *nop, *color, *unsharpmask, *bc, *screen, *antierase, *saturation, *bloom, *addition, *shadowhighlights, *linearlight, *hardlight, *hsvhue, *crop, *lightchroma, *burn, *multiply, *softglow, *hslcolor, *lchcolor, *overlay, *softlight, *grainmerge;
+  GeglNode *input, *sa, *output, *nop, *color, *unsharpmask, *bc, *screen, *antierase, *saturation, *bloom, *addition, *shadowhighlights, *linearlight, *hardlight, *hsvhue, *crop, *lightchroma, *burn, *multiply, *softglow, *hslcolor, *lchcolor, *overlay, *softlight, *channelmixer, *grainmerge;
 
   input    = gegl_node_get_input_proxy (gegl, "input");
   output   = gegl_node_get_output_proxy (gegl, "output");
@@ -287,6 +302,11 @@ antierase = gegl_node_new_child (gegl,
                                   "operation", "gegl:shadows-highlights",
                                   NULL);
 
+  channelmixer    = gegl_node_new_child (gegl,
+                                  "operation", "gegl:channel-mixer",
+                                  NULL);
+
+
 
 
 
@@ -306,6 +326,11 @@ antierase = gegl_node_new_child (gegl,
       gegl_operation_meta_redirect (operation, "highlights-ccorrect", shadowhighlights, "highlights-ccorrect");
       gegl_operation_meta_redirect (operation, "brightness", bc, "brightness");
       gegl_operation_meta_redirect (operation, "contrast", bc, "contrast");
+      gegl_operation_meta_redirect (operation, "red", channelmixer, "rr-gain");
+      gegl_operation_meta_redirect (operation, "green", channelmixer, "gg-gain");
+      gegl_operation_meta_redirect (operation, "blue", channelmixer, "bb-gain");
+
+
 
 
 
@@ -344,6 +369,7 @@ antierase = gegl_node_new_child (gegl,
   state->color = color;
   state->bc = bc;
   state->lightchroma = lightchroma;
+  state->channelmixer = channelmixer;
   state->output = output;
 
   o->user_data = state;
