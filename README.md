@@ -1,8 +1,7 @@
 
+## Color and Lighting adjustments all in one place using this awesome Gimp Plugin 
 
 ![image preview](clf_realtime.png )
-
-
 
 ## OS specific location to put GEGL Filter binaries 
 
