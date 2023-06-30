@@ -54,5 +54,10 @@ meson setup --buildtype=release build
 ninja -C build
 ```
 
+### Another preview image of this based plugin
+
+![image preview](color-light-fusion-preview.png)
+
+
 
 
