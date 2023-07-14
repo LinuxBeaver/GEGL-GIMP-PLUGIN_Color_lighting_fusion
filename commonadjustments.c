@@ -169,9 +169,7 @@ typedef struct
   GeglNode *input;
   GeglNode *sa; 
   GeglNode *nop; 
-  GeglNode *bloom; 
   GeglNode *unsharpmask; 
-  GeglNode *softglow; 
   GeglNode *grainmerge; 
   GeglNode *softlight; 
   GeglNode *hardlight; 
@@ -221,7 +219,7 @@ update_graph (GeglOperation *operation)
     case GEGL_BLEND_MODE_TYPE_ANTIERASE: usethis = state->antierase; break;
   }
 
-  gegl_node_link_many (state->input, state->sa, state->output, NULL);
+  gegl_node_link_many (state->nop, state->sa, state->output, NULL);
   gegl_node_link_many (state->input, state->nop, state->unsharpmask, state->bc, state->lightchroma, state->saturation, state->shadowhighlights,  usethis, state->channelmixer,   NULL);
   gegl_node_connect_from (usethis, "aux", state->color, "output");
   gegl_node_connect_from (state->sa, "aux", state->channelmixer, "output");
@@ -232,7 +230,7 @@ static void attach (GeglOperation *operation)
 {
   GeglNode *gegl = operation->node;
 GeglProperties *o = GEGL_PROPERTIES (operation);
-  GeglNode *input, *sa, *output, *nop, *color, *unsharpmask, *bc, *screen, *antierase, *saturation, *bloom, *addition, *shadowhighlights, *linearlight, *hardlight, *hsvhue, *crop, *lightchroma, *burn, *multiply, *softglow, *hslcolor, *lchcolor, *overlay, *softlight, *channelmixer, *grainmerge;
+  GeglNode *input, *sa, *output, *nop, *color, *unsharpmask, *bc, *screen, *antierase, *saturation, *addition, *shadowhighlights, *linearlight, *hardlight, *hsvhue, *crop, *lightchroma, *burn, *multiply, *hslcolor, *lchcolor, *overlay, *softlight, *channelmixer, *grainmerge;
 
   input    = gegl_node_get_input_proxy (gegl, "input");
   output   = gegl_node_get_output_proxy (gegl, "output");
@@ -261,46 +259,46 @@ GeglProperties *o = GEGL_PROPERTIES (operation);
                                   NULL);
 
 hslcolor = gegl_node_new_child (gegl,
-                                  "operation", "gimp:layer-mode", "layer-mode", 39, NULL);
+                                  "operation", "gimp:layer-mode", "layer-mode", 39, "composite-mode", 0, NULL);
 
 grainmerge = gegl_node_new_child (gegl,
-                                  "operation", "gimp:layer-mode", "layer-mode", 47, NULL);
+                                  "operation", "gimp:layer-mode", "layer-mode", 47, "composite-mode", 0, NULL);
 
 softlight = gegl_node_new_child (gegl,
-                                  "operation", "gimp:layer-mode", "layer-mode", 45, NULL);
+                                  "operation", "gimp:layer-mode", "layer-mode", 45, "composite-mode", 0, NULL);
 
 addition = gegl_node_new_child (gegl,
-                                  "operation", "gimp:layer-mode", "layer-mode", 33, NULL);
+                                  "operation", "gimp:layer-mode", "layer-mode", 33, "composite-mode", 0, NULL);
 
 
 hardlight = gegl_node_new_child (gegl,
-                                  "operation", "gimp:layer-mode", "layer-mode", 44, NULL);
+                                  "operation", "gimp:layer-mode", "layer-mode", 44, "composite-mode", 0, NULL);
 
 
 hsvhue = gegl_node_new_child (gegl,
-                                  "operation", "gimp:layer-mode", "layer-mode", 37, NULL);
+                                  "operation", "gimp:layer-mode", "layer-mode", 37, "composite-mode", 0, NULL);
 
 
 overlay = gegl_node_new_child (gegl,
-                                  "operation", "gimp:layer-mode", "layer-mode", 23, NULL);
+                                  "operation", "gimp:layer-mode", "layer-mode", 23, "composite-mode", 0, NULL);
 
 burn = gegl_node_new_child (gegl,
-                                  "operation", "gimp:layer-mode", "layer-mode", 43,  "blend-space", 1, NULL);
+                                  "operation", "gimp:layer-mode", "layer-mode", 43, "composite-mode", 0,  "blend-space", 1, NULL);
 
 lchcolor = gegl_node_new_child (gegl,
-                                    "operation", "gimp:layer-mode", "layer-mode", 26,  "blend-space", 3, NULL);
+                                    "operation", "gimp:layer-mode", "layer-mode", 26, "composite-mode", 0,  "blend-space", 3, NULL);
 
 multiply = gegl_node_new_child (gegl,
-                                    "operation", "gimp:layer-mode", "layer-mode", 30,  "blend-space", 2, NULL);
+                                    "operation", "gimp:layer-mode", "layer-mode", 30, "composite-mode", 0,  "blend-space", 2, NULL);
 
 linearlight = gegl_node_new_child (gegl,
-                                    "operation", "gimp:layer-mode", "layer-mode", 50,  "blend-space", 2, NULL);
+                                    "operation", "gimp:layer-mode", "layer-mode", 50, "composite-mode", 0,  "blend-space", 2, NULL);
 
 screen = gegl_node_new_child (gegl,
-                                    "operation", "gimp:layer-mode", "layer-mode", 31,  "blend-space", 2, NULL);
+                                    "operation", "gimp:layer-mode", "layer-mode", 31, "composite-mode", 0,  "blend-space", 2, NULL);
 
 antierase = gegl_node_new_child (gegl,
-                                    "operation", "gimp:layer-mode", "layer-mode", 63,  "blend-space", 2, NULL);
+                                    "operation", "gimp:layer-mode", "layer-mode", 63, "composite-mode", 0,  "blend-space", 2, NULL);
 
 
 
@@ -326,13 +324,6 @@ antierase = gegl_node_new_child (gegl,
                                   "operation", "gegl:channel-mixer",
                                   NULL);
 
-
-
-
-
-
-
-
   gegl_operation_meta_redirect (operation, "sat", saturation, "scale");
   gegl_operation_meta_redirect (operation, "lightness", lightchroma, "lightness");
   gegl_operation_meta_redirect (operation, "color", color, "value");
@@ -349,18 +340,6 @@ antierase = gegl_node_new_child (gegl,
       gegl_operation_meta_redirect (operation, "red", channelmixer, "rr-gain");
       gegl_operation_meta_redirect (operation, "green", channelmixer, "gg-gain");
       gegl_operation_meta_redirect (operation, "blue", channelmixer, "bb-gain");
-
-
-
-
-
-
-
-
-
-
-
-
 
   /* now save references to the gegl nodes so we can use them
    * later, when update_graph() is called
