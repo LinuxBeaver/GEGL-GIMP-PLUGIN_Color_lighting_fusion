@@ -387,10 +387,11 @@ GeglOperationMetaClass *operation_meta_class = GEGL_OPERATION_META_CLASS (klass)
   gegl_operation_class_set_keys (operation_class,
     "name",        "gegl:colorlightingfusion",
     "title",       _("Color Lighting Fusion"),
-    "categories",  "Artistic",
     "reference-hash", "ha3fs1fv0nyagsyefsfsgac",
     "description", _("GEGL does all common color and lighting adjustments in on place. Non specified resets are at 0. You can set the blend mode opacity slider from 99% to 0% by clicking on the colorbox and sliding the A slider to 0.0. This is mandatory for getting the most out of the filter."
                      ""),
+    "gimp:menu-path", "<Image>/Colors",
+    "gimp:menu-label", _("Color Light Fusion..."),
     NULL);
 }
 
