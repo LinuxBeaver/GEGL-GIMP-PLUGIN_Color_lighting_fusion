@@ -105,6 +105,7 @@ property_double (brightness, _("Brightness"), 0.0)
 
 property_double (lightness, _("Lightness"), 0.0)
    description  (_("Lightness adjustment"))
+   ui_range     (-30.0, 30.0)
    value_range  (-70, 70.0)
 
 property_double (shadows, _("Shadows"), 0.0)
@@ -262,7 +263,7 @@ hslcolor = gegl_node_new_child (gegl,
                                   "operation", "gimp:layer-mode", "layer-mode", 39, "composite-mode", 0, NULL);
 
 grainmerge = gegl_node_new_child (gegl,
-                                  "operation", "gimp:layer-mode", "layer-mode", 47, "composite-mode", 0, NULL);
+                                  "operation", "gimp:layer-mode", "layer-mode", 47, "composite-mode", 0, "blend-space", 2, NULL);
 
 softlight = gegl_node_new_child (gegl,
                                   "operation", "gimp:layer-mode", "layer-mode", 45, "composite-mode", 0, NULL);
@@ -272,7 +273,7 @@ addition = gegl_node_new_child (gegl,
 
 
 hardlight = gegl_node_new_child (gegl,
-                                  "operation", "gimp:layer-mode", "layer-mode", 44, "composite-mode", 0, NULL);
+                                  "operation", "gimp:layer-mode", "layer-mode", 44, "composite-mode", 0, "blend-space", 2, NULL);
 
 
 hsvhue = gegl_node_new_child (gegl,
