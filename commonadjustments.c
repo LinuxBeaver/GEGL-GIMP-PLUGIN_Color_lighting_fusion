@@ -222,8 +222,8 @@ update_graph (GeglOperation *operation)
 
   gegl_node_link_many (state->nop, state->sa, state->output, NULL);
   gegl_node_link_many (state->input, state->nop, state->unsharpmask, state->bc, state->lightchroma, state->saturation, state->shadowhighlights,  usethis, state->channelmixer,   NULL);
-  gegl_node_connect_from (usethis, "aux", state->color, "output");
-  gegl_node_connect_from (state->sa, "aux", state->channelmixer, "output");
+  gegl_node_connect (usethis, "aux", state->color, "output");
+  gegl_node_connect (state->sa, "aux", state->channelmixer, "output");
 
 }
 
@@ -386,10 +386,10 @@ GeglOperationMetaClass *operation_meta_class = GEGL_OPERATION_META_CLASS (klass)
   operation_meta_class->update = update_graph;
 
   gegl_operation_class_set_keys (operation_class,
-    "name",        "gegl:colorlightingfusion",
+    "name",        "lb:colorlightingfusion",
     "title",       _("Color Lighting Fusion"),
     "reference-hash", "ha3fs1fv0nyagsyefsfsgac",
-    "description", _("GEGL does all common color and lighting adjustments in on place. Non specified resets are at 0. You can set the blend mode opacity slider from 99% to 0% by clicking on the colorbox and sliding the A slider to 0.0. This is mandatory for getting the most out of the filter."
+    "description", _("Do all common color and lighting adjustments in one place. Non specified resets are at 0. You can set the blend mode opacity slider from 99% to 0% by clicking on the colorbox and sliding the A slider to 0.0. This is mandatory for getting the most out of the filter."
                      ""),
     "gimp:menu-path", "<Image>/Colors",
     "gimp:menu-label", _("Color Light Fusion..."),
