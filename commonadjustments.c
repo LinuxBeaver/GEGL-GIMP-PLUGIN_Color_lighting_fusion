@@ -78,7 +78,7 @@ enum_end (GeglBlendModeType4)
 
 
 
-property_color (color, _("Color to blend"), "#")
+property_color (color, _("Color to blend"), "transparent")
     ui_meta     ("role", "color-primary")
 
 property_double (scale, _("Sharpen"), 0.0)
