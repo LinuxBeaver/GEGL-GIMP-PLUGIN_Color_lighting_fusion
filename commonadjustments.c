@@ -178,7 +178,6 @@ typedef struct
   GeglNode *hsvhue; 
   GeglNode *antierase; 
   GeglNode *addition; 
-  GeglNode *crop; 
   GeglNode *shadowhighlights; 
   GeglNode *lchcolor; 
   GeglNode *burn; 
@@ -231,7 +230,7 @@ static void attach (GeglOperation *operation)
 {
   GeglNode *gegl = operation->node;
 GeglProperties *o = GEGL_PROPERTIES (operation);
-  GeglNode *input, *sa, *output, *nop, *color, *unsharpmask, *bc, *screen, *antierase, *saturation, *addition, *shadowhighlights, *linearlight, *hardlight, *hsvhue, *crop, *lightchroma, *burn, *multiply, *hslcolor, *lchcolor, *overlay, *softlight, *channelmixer, *grainmerge;
+  GeglNode *input, *sa, *output, *nop, *color, *unsharpmask, *bc, *screen, *antierase, *saturation, *addition, *shadowhighlights, *linearlight, *hardlight, *hsvhue,  *lightchroma, *burn, *multiply, *hslcolor, *lchcolor, *overlay, *softlight, *channelmixer, *grainmerge;
 
   input    = gegl_node_get_input_proxy (gegl, "input");
   output   = gegl_node_get_output_proxy (gegl, "output");
@@ -249,10 +248,6 @@ GeglProperties *o = GEGL_PROPERTIES (operation);
                                   "operation", "gegl:src-atop",
                                   NULL);
 
-
-  crop    = gegl_node_new_child (gegl,
-                                  "operation", "gegl:crop",
-                                  NULL);
 
 
   nop    = gegl_node_new_child (gegl,
@@ -365,7 +360,6 @@ antierase = gegl_node_new_child (gegl,
   state->hslcolor = hslcolor;
   state->saturation = saturation;
   state->hsvhue = hsvhue;
-  state->crop = crop;
   state->color = color;
   state->bc = bc;
   state->lightchroma = lightchroma;
