@@ -108,6 +108,12 @@ property_double (lightness, _("Lightness"), 0.0)
    ui_range     (-30.0, 30.0)
    value_range  (-70, 70.0)
 
+property_double (lightnessluma, _("Lightness (Luma)"), 0.0)
+   description  (_("Lightness adjustment of luminance channel"))
+   ui_range     (-30.0, 30.0)
+   value_range  (-70, 70.0)
+
+
 property_double (shadows, _("Shadows"), 0.0)
     description (_("Adjust exposure of shadows"))
     value_range (-100.0, 100.0)
@@ -181,6 +187,8 @@ typedef struct
   GeglNode *crop; 
   GeglNode *shadowhighlights; 
   GeglNode *lchcolor; 
+  GeglNode *luma; 
+  GeglNode *lightluma; 
   GeglNode *burn; 
   GeglNode *multiply; 
   GeglNode *linearlight; 
@@ -220,9 +228,11 @@ update_graph (GeglOperation *operation)
     case GEGL_BLEND_MODE_TYPE_ANTIERASE: usethis = state->antierase; break;
   }
 
+  gegl_node_link_many (state->lightchroma, state->lightluma, NULL);
   gegl_node_link_many (state->nop, state->sa, state->output, NULL);
-  gegl_node_link_many (state->input, state->nop, state->unsharpmask, state->bc, state->lightchroma, state->saturation, state->shadowhighlights,  usethis, state->channelmixer,   NULL);
+  gegl_node_link_many (state->input, state->nop, state->unsharpmask, state->bc, state->lightchroma, state->luma, state->saturation, state->shadowhighlights,  usethis, state->channelmixer,   NULL);
   gegl_node_connect (usethis, "aux", state->color, "output");
+  gegl_node_connect (state->luma, "aux", state->lightluma, "output");
   gegl_node_connect (state->sa, "aux", state->channelmixer, "output");
 
 }
@@ -231,7 +241,7 @@ static void attach (GeglOperation *operation)
 {
   GeglNode *gegl = operation->node;
 GeglProperties *o = GEGL_PROPERTIES (operation);
-  GeglNode *input, *sa, *output, *nop, *color, *unsharpmask, *bc, *screen, *antierase, *saturation, *addition, *shadowhighlights, *linearlight, *hardlight, *hsvhue, *crop, *lightchroma, *burn, *multiply, *hslcolor, *lchcolor, *overlay, *softlight, *channelmixer, *grainmerge;
+  GeglNode *input, *sa, *output, *nop, *color, *lightluma, *luma, *unsharpmask, *bc, *screen, *antierase, *saturation, *addition, *shadowhighlights, *linearlight, *hardlight, *hsvhue, *crop, *lightchroma, *burn, *multiply, *hslcolor, *lchcolor, *overlay, *softlight, *channelmixer, *grainmerge;
 
   input    = gegl_node_get_input_proxy (gegl, "input");
   output   = gegl_node_get_output_proxy (gegl, "output");
@@ -244,6 +254,10 @@ GeglProperties *o = GEGL_PROPERTIES (operation);
   bc    = gegl_node_new_child (gegl,
                                   "operation", "gegl:brightness-contrast",
                                   NULL);
+
+  luma    = gegl_node_new_child (gegl,
+                                   "operation", "gimp:layer-mode", "layer-mode", 56, "composite-mode", 0, NULL);
+
 
   sa    = gegl_node_new_child (gegl,
                                   "operation", "gegl:src-atop",
@@ -301,7 +315,9 @@ screen = gegl_node_new_child (gegl,
 antierase = gegl_node_new_child (gegl,
                                     "operation", "gimp:layer-mode", "layer-mode", 63, "composite-mode", 0,  "blend-space", 2, NULL);
 
-
+  lightluma    = gegl_node_new_child (gegl,
+                                  "operation", "gegl:hue-chroma",
+                                  NULL);
 
   lightchroma    = gegl_node_new_child (gegl,
                                   "operation", "gegl:hue-chroma",
@@ -327,6 +343,7 @@ antierase = gegl_node_new_child (gegl,
 
   gegl_operation_meta_redirect (operation, "sat", saturation, "scale");
   gegl_operation_meta_redirect (operation, "lightness", lightchroma, "lightness");
+  gegl_operation_meta_redirect (operation, "lightnessluma", lightluma, "lightness");
   gegl_operation_meta_redirect (operation, "color", color, "value");
   gegl_operation_meta_redirect (operation, "scale", unsharpmask, "scale");
      gegl_operation_meta_redirect (operation, "radius", shadowhighlights, "radius");
@@ -359,6 +376,8 @@ antierase = gegl_node_new_child (gegl,
   state->multiply = multiply;
   state->hardlight = hardlight;
   state->screen = screen;
+  state->luma = luma;
+  state->lightluma = lightluma;
   state->linearlight = linearlight;
   state->overlay = overlay;
   state->shadowhighlights = shadowhighlights;
