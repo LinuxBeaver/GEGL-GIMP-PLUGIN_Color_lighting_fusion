@@ -312,8 +312,10 @@ linearlight = gegl_node_new_child (gegl,
 screen = gegl_node_new_child (gegl,
                                     "operation", "gimp:layer-mode", "layer-mode", 31, "composite-mode", 0,  "blend-space", 2, NULL);
 
-antierase = gegl_node_new_child (gegl,
-                                    "operation", "gimp:layer-mode", "layer-mode", 63, "composite-mode", 0,  "blend-space", 2, NULL);
+
+  antierase    = gegl_node_new_child (gegl,
+                                  "operation", "gegl:dst",
+                                  NULL);
 
   lightluma    = gegl_node_new_child (gegl,
                                   "operation", "gegl:hue-chroma",
